@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # Base de Datos para Ventas
+  db-ventas:
+    image: mysql:8.0
+    container_name: db-ventas
+    environment:
+      MYSQL_DATABASE: ventas_db
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - data-ventas:/var/lib/mysql # Persistencia (IE4)
+    networks:
+      - devops-net
+
+  # Microservicio Ventas
+  backend-ventas:
+    build: ./back-Ventas_SpringBoot/Springboot-API-REST
+    container_name: backend-ventas
+    ports:
+      - "8081:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-ventas:3306/ventas_db
+    depends_on:
+      - db-ventas
+    networks:
+      - devops-net
+
+  # Frontend
+  frontend:
+    build: ./front_despacho
+    container_name: frontend-app
+    ports:
+      - "80:80"
+    networks:
+      - devops-net
+
+networks:
+  devops-net:
+
+volumes:
+  data-ventas:
