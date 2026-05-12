@@ -49,9 +49,8 @@ export const TableCompras = () => {
                 </tr>
               </thead>
               <tbody>
-                {console.log("Renderizando ventas filtradas:", ventas.filter(v => !v.despachoGenerado))}
+                {console.log("Renderizando todas las ventas (sin filtro):", ventas)}
                 {ventas
-                  .filter((venta) => !venta.despachoGenerado)
                   .map((venta) => (
                     <tr key={venta.idVenta}>
                       <td className="pr-10 py-10 items-center">
