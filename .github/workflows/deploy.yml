@@ -20,14 +20,20 @@ jobs:
           source: "."
           target: "/home/ec2-user/app"
 
-      - name: Execute Docker Compose on EC2
+      - name: Execute Docker Build and Compose on EC2
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.AWS_HOST }}
-          username: ec2-user # Ajustado para Amazon Linux
+          username: ec2-user
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
             cd /home/ec2-user/app
-            # Intentar levantar los servicios
+            # Detener lo anterior
             docker-compose down
-            docker-compose up -d --build
+            
+            # Construir imágenes manualmente para evitar el error de Buildx
+            docker build -t app-backend-ventas ./back-Ventas_SpringBoot/Springboot-API-REST
+            docker build -t app-frontend ./front_despacho
+            
+            # Levantar usando las imágenes ya construidas
+            docker-compose up -d
