@@ -1,41 +1,46 @@
 version: '3.8'
-
 services:
-  # Base de Datos para Ventas
   db-ventas:
     image: mysql:8.0
     container_name: db-ventas
     environment:
       MYSQL_DATABASE: ventas_db
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: root # Contraseña maestra
     volumes:
-      - data-ventas:/var/lib/mysql # Persistencia (IE4)
+      - data-ventas:/var/lib/mysql
     networks:
       - devops-net
     deploy:
       resources:
         limits:
-          memory: 300M
+          memory: 250M
 
-  # Microservicio Ventas
   backend-ventas:
     build: ./back-Ventas_SpringBoot/Springboot-API-REST
     container_name: backend-ventas
-    ports:
-      - "8081:8080"
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://db-ventas:3306/ventas_db?allowPublicKeyRetrieval=true&useSSL=false
-      - JAVA_OPTS=-Xmx256m # Limita la RAM de Java para que no colapse la EC2
     depends_on:
       - db-ventas
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-ventas:3306/ventas_db?allowPublicKeyRetrieval=true&useSSL=false
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - JAVA_OPTS=-Xmx200m
     networks:
       - devops-net
-    deploy:
-      resources:
-        limits:
-          memory: 350M
 
-  # Frontend
+  backend-despachos: # <--- Integrando el segundo microservicio
+    build: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
+    container_name: backend-despachos
+    depends_on:
+      - db-ventas # Usan la misma base de datos según tu estructura
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-ventas:3306/ventas_db?allowPublicKeyRetrieval=true&useSSL=false
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - JAVA_OPTS=-Xmx200m
+    networks:
+      - devops-net
+
   frontend:
     build: ./front_despacho
     container_name: frontend-app
@@ -43,10 +48,6 @@ services:
       - "80:80"
     networks:
       - devops-net
-    deploy:
-      resources:
-        limits:
-          memory: 100M
 
 networks:
   devops-net:
