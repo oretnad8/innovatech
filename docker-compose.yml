@@ -48,7 +48,11 @@ services:
       - devops-net
 
   frontend:
-    build: ./front_despacho
+    build:
+      context: ./front_despacho
+      args:
+        - VITE_API_VENTAS=http://13.218.112.68:8081
+        - VITE_API_DESPACHOS=http://13.218.112.68:8080
     container_name: frontend-app
     ports:
       - "80:80"

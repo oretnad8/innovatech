@@ -1,6 +1,15 @@
 # Stage 1: Build
 FROM node:18-alpine AS build
 WORKDIR /app
+
+# Declarar argumentos
+ARG VITE_API_VENTAS
+ARG VITE_API_DESPACHOS
+
+# Convertir argumentos en variables de entorno para el build de Vite
+ENV VITE_API_VENTAS=$VITE_API_VENTAS
+ENV VITE_API_DESPACHOS=$VITE_API_DESPACHOS
+
 COPY package*.json ./
 RUN npm install
 COPY . .
