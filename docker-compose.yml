@@ -18,6 +18,8 @@ services:
   backend-ventas:
     build: ./back-Ventas_SpringBoot/Springboot-API-REST
     container_name: backend-ventas
+    ports:
+      - "8081:8080" # Redirige el 8081 externo al 8080 interno de Spring
     depends_on:
       - db-ventas
     environment:
@@ -31,6 +33,8 @@ services:
   backend-despachos: # <--- Integrando el segundo microservicio
     build: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
     container_name: backend-despachos
+    ports:
+      - "8080:8080" # Redirige el 8080 externo al 8080 interno de Spring
     depends_on:
       - db-ventas # Usan la misma base de datos según tu estructura
     environment:
