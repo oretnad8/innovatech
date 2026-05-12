@@ -15,8 +15,9 @@ export const TableDespachos = () => {
         }
       })
       .then((response) => {
-        console.log(response.data);
+        console.log("Datos recibidos de API Despachos:", response.data);
         setDespachos(response.data);
+        console.log("Estado 'despachos' actualizado en React");
       });
   };
   // Llamada a la función para obtener los datos cuando el componente se monta
@@ -50,9 +51,9 @@ export const TableDespachos = () => {
                 </tr>
               </thead>
               <tbody>
+                {console.log("Renderizando despachos:", despachos)}
                 {despachos
-               
-                .map((despacho) => (
+                  .map((despacho) => (
                   <tr key={despacho.idDespacho}>
                     <td className="pr-10 py-10 items-center">{despacho.idDespacho}</td>
                     <td className="pr-10 py-10  items-center">

@@ -13,8 +13,9 @@ export const TableCompras = () => {
         'Accept': 'application/json'
   }
     }).then((response) => {
-      console.log(response.data);
+      console.log("Datos recibidos de API Ventas:", response.data);
       setVentas(response.data);
+      console.log("Estado 'ventas' actualizado en React");
     });
   };
   // Llamada a la función para obtener los datos cuando el componente se monta
@@ -48,6 +49,7 @@ export const TableCompras = () => {
                 </tr>
               </thead>
               <tbody>
+                {console.log("Renderizando ventas filtradas:", ventas.filter(v => !v.despachoGenerado))}
                 {ventas
                   .filter((venta) => !venta.despachoGenerado)
                   .map((venta) => (
