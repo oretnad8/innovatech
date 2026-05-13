@@ -19,7 +19,7 @@ services:
     build: ./back-Ventas_SpringBoot/Springboot-API-REST
     container_name: backend-ventas
     ports:
-      - "8081:8081" # Ahora lo pondremos en el 8081 real
+      - "8081:8081"
     depends_on:
       - db-ventas
     environment:
@@ -31,18 +31,18 @@ services:
     networks:
       - devops-net
 
-  backend-despachos: # <--- Integrando el segundo microservicio
+  backend-despachos:
     build: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
     container_name: backend-despachos
     ports:
-      - "8080:8080" # Expone el 8080 al mundo
+      - "8080:8080"
     depends_on:
-      - db-ventas # Usan la misma base de datos según tu estructura
+      - db-ventas
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://db-ventas:3306/ventas_db?allowPublicKeyRetrieval=true&useSSL=false
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=root
-      - SERVER_PORT=8080 
+      - SERVER_PORT=8080
       - JAVA_OPTS=-Xmx200m
     networks:
       - devops-net
@@ -51,8 +51,8 @@ services:
     build:
       context: ./front_despacho
       args:
-        - VITE_API_VENTAS=http://13.218.112.68:8081
-        - VITE_API_DESPACHOS=http://13.218.112.68:8080
+        - VITE_API_VENTAS=http://34.239.144.101:8081
+        - VITE_API_DESPACHOS=http://34.239.144.101:8080
     container_name: frontend-app
     ports:
       - "80:80"
