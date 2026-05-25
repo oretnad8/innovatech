@@ -1,13 +1,32 @@
 @echo off
-set /p NUEVA_IP="Introduce la nueva IP de AWS (ej. 54.209.101.72): "
+set /p NUEVA_IP="Introduce la nueva IP de AWS (ej. 54.198.73.188): "
 
 echo Procesando cambios de IP en los componentes...
 
-:: 1. FRONTEND: Reemplazar en todos los archivos .jsx dentro de front_despacho
-powershell -Command "Get-ChildItem -Path '.\front_despacho' -Recurse -Filter '*.jsx' | ForEach-Object { (Get-Content $_.FullName) -replace 'http://\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', 'http://%NUEVA_IP%' | Set-Content $_.FullName }"
+:: 1. FRONTEND: .env y archivos .jsx
+if exist ".\front_despacho\.env" (
+    powershell -Command "$ip='%NUEVA_IP%'.Trim(); (Get-Content '.\front_despacho\.env') -replace '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', $ip | Set-Content '.\front_despacho\.env'"
+    echo [+] Actualizado: .env del frontend.
+)
 
-:: 2. BACKENDS: Reemplazar en los application.properties si es que tienen IPs fijas en lugar de 'db'
-powershell -Command "Get-ChildItem -Path '.\back-Ventas_SpringBoot', '.\back-Despachos_SpringBoot' -Recurse -Filter 'application.properties' | ForEach-Object { (Get-Content $_.FullName) -replace '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', '%NUEVA_IP%' | Set-Content $_.FullName }"
+powershell -Command "$ip='%NUEVA_IP%'.Trim(); Get-ChildItem -Path '.\front_despacho' -Recurse -Filter '*.jsx' | ForEach-Object { (Get-Content $_.FullName) -replace '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', $ip | Set-Content $_.FullName }"
+echo [+] Actualizado: Archivos .jsx en front_despacho.
+
+:: 2. DOCKER-COMPOSE: docker-compose.yml
+if exist ".\docker-compose.yml" (
+    powershell -Command "$ip='%NUEVA_IP%'.Trim(); (Get-Content '.\docker-compose.yml') -replace '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', $ip | Set-Content '.\docker-compose.yml'"
+    echo [+] Actualizado: docker-compose.yml.
+)
+
+:: 3. GITHUB ACTIONS WORKFLOW: .github/workflows/deploy.yml
+if exist ".\.github\workflows\deploy.yml" (
+    powershell -Command "$ip='%NUEVA_IP%'.Trim(); (Get-Content '.\.github\workflows\deploy.yml') -replace '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', $ip | Set-Content '.\.github\workflows\deploy.yml'"
+    echo [+] Actualizado: .github/workflows/deploy.yml.
+)
+
+:: 4. BACKENDS: application.properties
+powershell -Command "$ip='%NUEVA_IP%'.Trim(); Get-ChildItem -Path '.\back-Ventas_SpringBoot', '.\back-Despachos_SpringBoot' -Recurse -Filter 'application.properties' | ForEach-Object { (Get-Content $_.FullName) -replace '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', $ip | Set-Content $_.FullName }"
+echo [+] Actualizado: Archivos application.properties.
 
 echo --------------------------------------------------
 echo ¡Listo! Archivos de codigo actualizados con la IP: %NUEVA_IP%

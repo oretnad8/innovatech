@@ -31,5 +31,5 @@ jobs:
             docker-compose down || true
             docker build -t app-backend-ventas ./back-Ventas_SpringBoot/Springboot-API-REST
             docker build -t app-backend-despachos ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
-            docker build -t app-frontend --build-arg VITE_API_VENTAS=http://13.218.112.68:8081 --build-arg VITE_API_DESPACHOS=http://13.218.112.68:8080 ./front_despacho
+            docker build -t app-frontend --build-arg VITE_API_VENTAS=http://54.198.73.188:8081 --build-arg VITE_API_DESPACHOS=http://54.198.73.188:8080 ./front_despacho
             docker-compose up -d

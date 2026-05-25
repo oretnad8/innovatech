@@ -51,8 +51,8 @@ services:
     build:
       context: ./front_despacho
       args:
-        - VITE_API_VENTAS=http://3.81.15.65:8081
-        - VITE_API_DESPACHOS=http://3.81.15.65:8080
+        - VITE_API_VENTAS=http://54.198.73.188:8081
+        - VITE_API_DESPACHOS=http://54.198.73.188:8080
     container_name: frontend-app
     ports:
       - "80:80"
