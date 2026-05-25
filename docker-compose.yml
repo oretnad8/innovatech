@@ -1,11 +1,12 @@
 version: '3.8'
+
 services:
   db-ventas:
     image: mysql:8.0
     container_name: db-ventas
     environment:
       MYSQL_DATABASE: ventas_db
-      MYSQL_ROOT_PASSWORD: root # Contraseña maestra
+      MYSQL_ROOT_PASSWORD: root
     volumes:
       - data-ventas:/var/lib/mysql
     networks:
@@ -14,9 +15,10 @@ services:
       resources:
         limits:
           memory: 250M
+    restart: always
 
   backend-ventas:
-    build: ./back-Ventas_SpringBoot/Springboot-API-REST
+    image: oretnad8/innovatech-backend-ventas:latest
     container_name: backend-ventas
     ports:
       - "8081:8081"
@@ -30,9 +32,10 @@ services:
       - JAVA_OPTS=-Xmx200m
     networks:
       - devops-net
+    restart: always
 
   backend-despachos:
-    build: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
+    image: oretnad8/innovatech-backend-despacho:latest
     container_name: backend-despachos
     ports:
       - "8080:8080"
@@ -46,18 +49,19 @@ services:
       - JAVA_OPTS=-Xmx200m
     networks:
       - devops-net
+    restart: always
 
   frontend:
-    build:
-      context: ./front_despacho
-      args:
-        - VITE_API_VENTAS=http://54.198.73.188:8081
-        - VITE_API_DESPACHOS=http://54.198.73.188:8080
+    image: oretnad8/innovatech-frontend:latest
     container_name: frontend-app
     ports:
       - "80:80"
+    depends_on:
+      - backend-ventas
+      - backend-despachos
     networks:
       - devops-net
+    restart: always
 
 networks:
   devops-net:
