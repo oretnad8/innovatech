@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  db-ventas:
+    image: mysql:8.0
+    container_name: db-ventas
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: ventas_db
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - data-ventas:/var/lib/mysql
+    networks:
+      - devops-net
+    deploy:
+      resources:
+        limits:
+          memory: 250M
+    restart: always
+
+networks:
+  devops-net:
+    driver: bridge
+
+volumes:
+  data-ventas:

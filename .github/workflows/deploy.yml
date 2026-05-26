@@ -1,4 +1,4 @@
-name: Deploy to AWS EC2
+name: Deploy to Multi-Tier AWS Architecture
 
 on:
   push:
@@ -17,6 +17,9 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # ==========================================================
+      # CONSTRUCCIÓN Y EMPAQUETADO EN GITHUB ACTIONS
+      # ==========================================================
       - name: Build and Push Images to Docker Hub
         run: |
           # 1. Compilar y subir Backend Ventas
@@ -27,50 +30,85 @@ jobs:
           docker build -t oretnad8/innovatech-backend-despacho:latest ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
           docker push oretnad8/innovatech-backend-despacho:latest
           
-          # 3. Compilar y subir Frontend con la IP actual integrada
-          docker build -t oretnad8/innovatech-frontend:latest --build-arg VITE_API_VENTAS=http://54.198.73.188:8081 --build-arg VITE_API_DESPACHOS=http://54.198.73.188:8080 ./front_despacho
+          # 3. Compilar y subir Frontend inyectando la IP PÚBLICA del servidor de Backends
+          docker build -t oretnad8/innovatech-frontend:latest --build-arg VITE_API_VENTAS=http://${{ secrets.AWS_HOST_BACK }}:8081 --build-arg VITE_API_DESPACHOS=http://${{ secrets.AWS_HOST_BACK }}:8080 ./front_despacho
           docker push oretnad8/innovatech-frontend:latest
 
-      - name: Copy files to EC2
+      # ==========================================================
+      # DESPLIEGUE CAPA DE DATOS (DATABASE)
+      # ==========================================================
+      - name: Copy Compose to DB Server
         uses: appleboy/scp-action@master
         with:
-          host: ${{ secrets.AWS_HOST }}
+          host: ${{ secrets.AWS_HOST_DB }}
           username: ec2-user
           key: ${{ secrets.AWS_SSH_KEY }}
-          source: "."
+          source: "docker-compose-db.yml"
           target: "/home/ec2-user/app"
-          
-      - name: Execute Manual Docker Build on EC2
+
+      - name: Deploy Database Server
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.AWS_HOST }}
+          host: ${{ secrets.AWS_HOST_DB }}
           username: ec2-user
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
+            mkdir -p /home/ec2-user/app
             cd /home/ec2-user/app
-            
-            # 1. Detener el entorno colgado y liberar espacio de inmediato
+            mv docker-compose-db.yml docker-compose.yml
+            docker-compose down || true
+            docker-compose up -d
+
+      # ==========================================================
+      # DESPLIEGUE CAPA DE LÓGICA (BACKENDS)
+      # ==========================================================
+      - name: Copy Compose to Backends Server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.AWS_HOST_BACK }}
+          username: ec2-user
+          key: ${{ secrets.AWS_SSH_KEY }}
+          source: "docker-compose-backends.yml"
+          target: "/home/ec2-user/app"
+
+      - name: Deploy Backends Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.AWS_HOST_BACK }}
+          username: ec2-user
+          key: ${{ secrets.AWS_SSH_KEY }}
+          script: |
+            mkdir -p /home/ec2-user/app
+            cd /home/ec2-user/app
+            mv docker-compose-backends.yml docker-compose.yml
             docker-compose down || true
             docker system prune -a -f
-            docker volume prune -f
-            
-            # 2. Descargar y levantar la Base de Datos primero
-            docker-compose pull db-ventas
-            docker-compose up -d db-ventas
-            docker system prune -f # Limpiar el almacenamiento temporal usado en la descarga
-            
-            # 3. Descargar y levantar Backend Ventas
-            docker-compose pull backend-ventas
-            docker-compose up -d backend-ventas
-            docker system prune -f
-            
-            # 4. Descargar y levantar Backend Despachos
-            docker-compose pull backend-despachos
-            docker-compose up -d backend-despachos
-            docker system prune -f
-            
-            # 5. Descargar y levantar el Frontend al final
-            docker-compose pull frontend
-            docker-compose up -d frontend
-            
-            echo "=== DESPLIEGUE SECUENCIAL COMPLETADO CON ÉXITO ==="
+            docker-compose pull
+            docker-compose up -d
+
+      # ==========================================================
+      # DESPLIEGUE CAPA DE PRESENTACIÓN (FRONTEND)
+      # ==========================================================
+      - name: Copy Compose to Frontend Server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.AWS_HOST_FRONT }}
+          username: ec2-user
+          key: ${{ secrets.AWS_SSH_KEY }}
+          source: "docker-compose-frontend.yml"
+          target: "/home/ec2-user/app"
+
+      - name: Deploy Frontend Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.AWS_HOST_FRONT }}
+          username: ec2-user
+          key: ${{ secrets.AWS_SSH_KEY }}
+          script: |
+            mkdir -p /home/ec2-user/app
+            cd /home/ec2-user/app
+            mv docker-compose-frontend.yml docker-compose.yml
+            docker-compose down || true
+            docker system prune -a -f
+            docker-compose pull
+            docker-compose up -d
