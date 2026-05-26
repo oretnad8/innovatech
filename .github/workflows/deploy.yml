@@ -11,11 +11,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Logueo nativo de Docker en los servidores de GitHub
+      # Logueo nativo en la infraestructura del runner de GitHub
       - name: Login to Docker Hub (Native)
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-      # Compilación en la nube de GitHub (Usa las IPs dinámicas de tus secretos)
+      # CONSTRUCCIÓN Y EMPAQUETADO EN LA NUBE DE GITHUB
       - name: Build and Push Images to Docker Hub
         run: |
           # 1. Compilar y subir Backend Ventas
@@ -26,11 +26,11 @@ jobs:
           docker build -t oretnad8/innovatech-backend-despacho:latest ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
           docker push oretnad8/innovatech-backend-despacho:latest
           
-          # 3. Compilar Frontend inyectando AUTOMÁTICAMENTE la IP del Backend en GitHub
-          docker build -t oretnad8/innovatech-frontend:latest --build-arg VITE_API_VENTAS=http://${{ secrets.AWS_HOST_BACK }}:8081 --build-arg VITE_API_DESPACHOS=http://${{ secrets.AWS_HOST_BACK }}:8080 ./front_despacho
+          # 3. Compilar Frontend inyectando las IPs en una sola línea estricta
+          docker build --build-arg VITE_API_VENTAS=http://${{ secrets.AWS_HOST_BACK }}:8081 --build-arg VITE_API_DESPACHOS=http://${{ secrets.AWS_HOST_BACK }}:8080 -t oretnad8/innovatech-frontend:latest ./front_despacho
           docker push oretnad8/innovatech-frontend:latest
 
-      # Configurar el cliente SSH nativo del Runner de GitHub
+      # Configurar la llave SSH nativa en la máquina virtual de GitHub
       - name: Setup SSH Native Key
         run: |
           mkdir -p ~/.ssh
@@ -39,7 +39,7 @@ jobs:
           echo -e "Host *\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
 
       # ==========================================================
-      # DESPLIEGUE AUTOMÁTICO POR SSH HACIA AWS
+      # ORQUESTACIÓN DIRECTA POR SSH / SCP NATIVO HACIA AWS
       # ==========================================================
       - name: Deploy Database Server
         run: |
