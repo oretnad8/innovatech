@@ -26,7 +26,7 @@ jobs:
           docker build -t oretnad8/innovatech-backend-despacho:latest ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
           docker push oretnad8/innovatech-backend-despacho:latest
           
-          # 3. Compilar Frontend inyectando las IPs en una sola línea estricta
+          # 3. Compilar Frontend inyectando las IPs
           docker build --build-arg VITE_API_VENTAS=http://${{ secrets.AWS_HOST_BACK }}:8081 --build-arg VITE_API_DESPACHOS=http://${{ secrets.AWS_HOST_BACK }}:8080 -t oretnad8/innovatech-frontend:latest ./front_despacho
           docker push oretnad8/innovatech-frontend:latest
 
@@ -39,41 +39,53 @@ jobs:
           echo -e "Host *\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
 
       # ==========================================================
-      # ORQUESTACIÓN DIRECTA POR SSH / SCP NATIVO HACIA AWS
+      # ORQUESTACIÓN CON SUDO DIRECTO HACIA AWS
       # ==========================================================
       - name: Deploy Database Server
         run: |
-          scp docker-compose-db.yml ec2-user@${{ secrets.AWS_HOST_DB }}:/home/ec2-user/docker-compose-db.yml
+          # Crear directorio remoto con permisos correctos primero
+          ssh ec2-user@${{ secrets.AWS_HOST_DB }} "sudo mkdir -p /home/ec2-user/app && sudo chmod 777 /home/ec2-user/app"
+          
+          # Copiar el archivo compose
+          scp docker-compose-db.yml ec2-user@${{ secrets.AWS_HOST_DB }}:/home/ec2-user/app/docker-compose.yml
+          
+          # Ejecutar el despliegue con SUDO absoluto
           ssh ec2-user@${{ secrets.AWS_HOST_DB }} << 'EOF'
-            mkdir -p /home/ec2-user/app
             cd /home/ec2-user/app
-            mv /home/ec2-user/docker-compose-db.yml ./docker-compose.yml 2>/dev/null || true
-            docker-compose down || docker compose down || true
-            docker-compose up -d || docker compose up -d
+            sudo docker-compose down || sudo docker compose down || true
+            sudo docker-compose up -d || sudo docker compose up -d
           EOF
 
       - name: Deploy Backends Server
         run: |
-          scp docker-compose-backends.yml ec2-user@${{ secrets.AWS_HOST_BACK }}:/home/ec2-user/docker-compose-backends.yml
+          # Crear directorio remoto con permisos
+          ssh ec2-user@${{ secrets.AWS_HOST_BACK }} "sudo mkdir -p /home/ec2-user/app && sudo chmod 777 /home/ec2-user/app"
+          
+          # Copiar el archivo compose
+          scp docker-compose-backends.yml ec2-user@${{ secrets.AWS_HOST_BACK }}:/home/ec2-user/app/docker-compose.yml
+          
+          # Ejecutar con SUDO y limpiar memoria
           ssh ec2-user@${{ secrets.AWS_HOST_BACK }} << 'EOF'
-            mkdir -p /home/ec2-user/app
             cd /home/ec2-user/app
-            mv /home/ec2-user/docker-compose-backends.yml ./docker-compose.yml 2>/dev/null || true
-            docker-compose down || docker compose down || true
-            docker system prune -a -f
-            docker-compose pull || docker compose pull
-            docker-compose up -d || docker compose up -d
+            sudo docker-compose down || sudo docker compose down || true
+            sudo docker system prune -a -f
+            sudo docker-compose pull || sudo docker compose pull
+            sudo docker-compose up -d || sudo docker compose up -d
           EOF
 
       - name: Deploy Frontend Server
         run: |
-          scp docker-compose-frontend.yml ec2-user@${{ secrets.AWS_HOST_FRONT }}:/home/ec2-user/docker-compose-frontend.yml
+          # Crear directorio remoto con permisos
+          ssh ec2-user@${{ secrets.AWS_HOST_FRONT }} "sudo mkdir -p /home/ec2-user/app && sudo chmod 777 /home/ec2-user/app"
+          
+          # Copiar el archivo compose
+          scp docker-compose-frontend.yml ec2-user@${{ secrets.AWS_HOST_FRONT }}:/home/ec2-user/app/docker-compose.yml
+          
+          # Ejecutar con SUDO
           ssh ec2-user@${{ secrets.AWS_HOST_FRONT }} << 'EOF'
-            mkdir -p /home/ec2-user/app
             cd /home/ec2-user/app
-            mv /home/ec2-user/docker-compose-frontend.yml ./docker-compose.yml 2>/dev/null || true
-            docker-compose down || docker compose down || true
-            docker system prune -a -f
-            docker-compose pull || docker compose pull
-            docker-compose up -d || docker compose up -d
+            sudo docker-compose down || sudo docker compose down || true
+            sudo docker system prune -a -f
+            sudo docker-compose pull || sudo docker compose pull
+            sudo docker-compose up -d || sudo docker compose up -d
           EOF
