@@ -55,9 +55,9 @@ jobs:
           script: |
             mkdir -p /home/ec2-user/app
             cd /home/ec2-user/app
-            mv docker-compose-db.yml docker-compose.yml
-            docker-compose down || true
-            docker-compose up -d
+            if [ -f "docker-compose-db.yml" ]; then cp docker-compose-db.yml docker-compose.yml; fi
+            docker-compose down || docker compose down || true
+            docker-compose up -d || docker compose up -d
 
       # ==========================================================
       # DESPLIEGUE CAPA DE LÓGICA (BACKENDS)
@@ -80,11 +80,11 @@ jobs:
           script: |
             mkdir -p /home/ec2-user/app
             cd /home/ec2-user/app
-            mv docker-compose-backends.yml docker-compose.yml
-            docker-compose down || true
+            if [ -f "docker-compose-backends.yml" ]; then cp docker-compose-backends.yml docker-compose.yml; fi
+            docker-compose down || docker compose down || true
             docker system prune -a -f
-            docker-compose pull
-            docker-compose up -d
+            docker-compose pull || docker compose pull
+            docker-compose up -d || docker compose up -d
 
       # ==========================================================
       # DESPLIEGUE CAPA DE PRESENTACIÓN (FRONTEND)
@@ -107,8 +107,8 @@ jobs:
           script: |
             mkdir -p /home/ec2-user/app
             cd /home/ec2-user/app
-            mv docker-compose-frontend.yml docker-compose.yml
-            docker-compose down || true
+            if [ -f "docker-compose-frontend.yml" ]; then cp docker-compose-frontend.yml docker-compose.yml; fi
+            docker-compose down || docker compose down || true
             docker system prune -a -f
-            docker-compose pull
-            docker-compose up -d
+            docker-compose pull || docker compose pull
+            docker-compose up -d || docker compose up -d
