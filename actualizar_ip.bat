@@ -1,7 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
 title InnovaTech IP Configuration Tool
-chcp 65001 >nul
 
 echo ======================================================================
 echo          INNOVATECH - MULTI-TIER INSTANCE IP CONFIGURATION            
@@ -15,15 +14,15 @@ set DEFAULT_FRONT=44.215.72.96
 set DEFAULT_BACK=98.86.164.163
 set DEFAULT_DB=44.213.90.125
 
-set /p IP_FRONT="[1/3] Enter Frontend Instance IP [!DEFAULT_FRONT!]: "
+set /p IP_FRONT="[1/3] Enter Frontend Instance IP [%DEFAULT_FRONT%]: "
 if "!IP_FRONT!"=="" set IP_FRONT=!DEFAULT_FRONT!
 set IP_FRONT=!IP_FRONT: =!
 
-set /p IP_BACK="[2/3] Enter Backends Instance IP [!DEFAULT_BACK!]: "
+set /p IP_BACK="[2/3] Enter Backends Instance IP [%DEFAULT_BACK%]: "
 if "!IP_BACK!"=="" set IP_BACK=!DEFAULT_BACK!
 set IP_BACK=!IP_BACK: =!
 
-set /p IP_DB="[3/3] Enter Database Instance IP [!DEFAULT_DB!]: "
+set /p IP_DB="[3/3] Enter Database Instance IP [%DEFAULT_DB%]: "
 if "!IP_DB!"=="" set IP_DB=!DEFAULT_DB!
 set IP_DB=!IP_DB: =!
 
@@ -66,22 +65,22 @@ echo [+] Updated: Raw IP references in Spring Boot application.properties.
 
 echo.
 echo ======================================================================
-echo                ⚠️ IMPORTANT: GITHUB SECRETS REQUIREMENT ⚠️
+echo                IMPORTANT: GITHUB SECRETS REQUIREMENT                  
 echo ======================================================================
 echo Since you are using a Multi-Tier architecture with three separate
 echo servers, the GitHub Actions deployment workflow relies on Secrets.
 echo.
 echo Please go to your GitHub repository:
-echo Settings -> Secrets and variables -> Actions
+echo Settings - Secrets and variables - Actions
 echo.
 echo Update or create the following Repository Secrets with these values:
 echo.
-echo   🔒 AWS_HOST_FRONT  ==^>  !IP_FRONT!
-echo   🔒 AWS_HOST_BACK   ==^>  !IP_BACK!
-echo   🔒 AWS_HOST_DB     ==^>  !IP_DB!
+echo     AWS_HOST_FRONT  ==^>  !IP_FRONT!
+echo     AWS_HOST_BACK   ==^>  !IP_BACK!
+echo     AWS_HOST_DB     ==^>  !IP_DB!
 echo.
 echo Also verify that your:
-echo   🔒 AWS_SSH_KEY
+echo     AWS_SSH_KEY
 echo contains a valid private SSH key (.pem) authorized on all three servers.
 echo ======================================================================
 echo.
