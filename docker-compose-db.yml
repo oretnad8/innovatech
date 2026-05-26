@@ -1,5 +1,4 @@
 version: '3.8'
-
 services:
   db-ventas:
     image: mysql:8.0
@@ -11,17 +10,10 @@ services:
       MYSQL_ROOT_PASSWORD: root
     volumes:
       - data-ventas:/var/lib/mysql
-    networks:
-      - devops-net
     deploy:
       resources:
         limits:
           memory: 250M
     restart: always
-
-networks:
-  devops-net:
-    driver: bridge
-
 volumes:
   data-ventas:

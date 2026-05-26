@@ -1,15 +1,8 @@
 version: '3.8'
-
 services:
   frontend:
     image: oretnad8/innovatech-frontend:latest
     container_name: frontend-app
     ports:
       - "80:80"
-    networks:
-      - devops-net
     restart: always
-
-networks:
-  devops-net:
-    driver: bridge

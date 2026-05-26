@@ -11,15 +11,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # ==========================================================
-      # LOGUEO NATIVO DE DOCKER HUB (Sin plugins externos)
-      # ==========================================================
+      # Logueo nativo de Docker en los servidores de GitHub
       - name: Login to Docker Hub (Native)
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-      # ==========================================================
-      # CONSTRUCCIÓN Y EMPAQUETADO EN GITHUB ACTIONS
-      # ==========================================================
+      # Compilación en la nube de GitHub (Usa las IPs dinámicas de tus secretos)
       - name: Build and Push Images to Docker Hub
         run: |
           # 1. Compilar y subir Backend Ventas
@@ -30,70 +26,52 @@ jobs:
           docker build -t oretnad8/innovatech-backend-despacho:latest ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
           docker push oretnad8/innovatech-backend-despacho:latest
           
-          # 3. Compilar y subir Frontend inyectando la IP PÚBLICA del servidor de Backends
+          # 3. Compilar Frontend inyectando AUTOMÁTICAMENTE la IP del Backend en GitHub
           docker build -t oretnad8/innovatech-frontend:latest --build-arg VITE_API_VENTAS=http://${{ secrets.AWS_HOST_BACK }}:8081 --build-arg VITE_API_DESPACHOS=http://${{ secrets.AWS_HOST_BACK }}:8080 ./front_despacho
           docker push oretnad8/innovatech-frontend:latest
 
-      # ==========================================================
-      # CONFIGURAR LLAVE SSH NATIVA EN EL RUNNER DE GITHUB
-      # ==========================================================
+      # Configurar el cliente SSH nativo del Runner de GitHub
       - name: Setup SSH Native Key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.AWS_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          # Desactivar la verificación estricta de hosts para que no pida confirmar "yes/no"
           echo -e "Host *\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
 
       # ==========================================================
-      # DESPLIEGUE CAPA DE DATOS (DATABASE) - COMANDOS NATIVOS
+      # DESPLIEGUE AUTOMÁTICO POR SSH HACIA AWS
       # ==========================================================
-      - name: Deploy Database Server (Native)
+      - name: Deploy Database Server
         run: |
-          # Enviar archivo usando SCP nativo de Linux
-          scp docker-compose-db.yml ec2-user@${{ secrets.AWS_HOST_DB }}:/home/ec2-user/app/docker-compose-db.yml
-          
-          # Ejecutar comandos remotos mediante SSH nativo
+          scp docker-compose-db.yml ec2-user@${{ secrets.AWS_HOST_DB }}:/home/ec2-user/docker-compose-db.yml
           ssh ec2-user@${{ secrets.AWS_HOST_DB }} << 'EOF'
             mkdir -p /home/ec2-user/app
             cd /home/ec2-user/app
-            cp docker-compose-db.yml docker-compose.yml 2>/dev/null || true
+            mv /home/ec2-user/docker-compose-db.yml ./docker-compose.yml 2>/dev/null || true
             docker-compose down || docker compose down || true
             docker-compose up -d || docker compose up -d
           EOF
 
-      # ==========================================================
-      # DESPLIEGUE CAPA DE LÓGICA (BACKENDS) - COMANDOS NATIVOS
-      # ==========================================================
-      - name: Deploy Backends Server (Native)
+      - name: Deploy Backends Server
         run: |
-          # Enviar archivo
-          scp docker-compose-backends.yml ec2-user@${{ secrets.AWS_HOST_BACK }}:/home/ec2-user/app/docker-compose-backends.yml
-          
-          # Ejecutar comandos
+          scp docker-compose-backends.yml ec2-user@${{ secrets.AWS_HOST_BACK }}:/home/ec2-user/docker-compose-backends.yml
           ssh ec2-user@${{ secrets.AWS_HOST_BACK }} << 'EOF'
             mkdir -p /home/ec2-user/app
             cd /home/ec2-user/app
-            cp docker-compose-backends.yml docker-compose.yml 2>/dev/null || true
+            mv /home/ec2-user/docker-compose-backends.yml ./docker-compose.yml 2>/dev/null || true
             docker-compose down || docker compose down || true
             docker system prune -a -f
             docker-compose pull || docker compose pull
             docker-compose up -d || docker compose up -d
           EOF
 
-      # ==========================================================
-      # DESPLIEGUE CAPA DE PRESENTACIÓN (FRONTEND) - COMANDOS NATIVOS
-      # ==========================================================
-      - name: Deploy Frontend Server (Native)
+      - name: Deploy Frontend Server
         run: |
-          # Enviar archivo
-          scp docker-compose-frontend.yml ec2-user@${{ secrets.AWS_HOST_FRONT }}:/home/ec2-user/app/docker-compose-frontend.yml
-          
-          # Ejecutar comandos
+          scp docker-compose-frontend.yml ec2-user@${{ secrets.AWS_HOST_FRONT }}:/home/ec2-user/docker-compose-frontend.yml
           ssh ec2-user@${{ secrets.AWS_HOST_FRONT }} << 'EOF'
             mkdir -p /home/ec2-user/app
             cd /home/ec2-user/app
-            cp docker-compose-frontend.yml docker-compose.yml 2>/dev/null || true
+            mv /home/ec2-user/docker-compose-frontend.yml ./docker-compose.yml 2>/dev/null || true
             docker-compose down || docker compose down || true
             docker system prune -a -f
             docker-compose pull || docker compose pull
