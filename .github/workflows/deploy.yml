@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v3
 
       # ==========================================================
-      # LOGUEO NATIVO SIN DEPENDER DE ACCIONES EXTERNAS (EVITA ERRORES DE DOWNLOAD)
+      # LOGUEO NATIVO DE DOCKER HUB (Sin plugins externos)
       # ==========================================================
       - name: Login to Docker Hub (Native)
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
@@ -35,80 +35,67 @@ jobs:
           docker push oretnad8/innovatech-frontend:latest
 
       # ==========================================================
-      # DESPLIEGUE CAPA DE DATOS (DATABASE)
+      # CONFIGURAR LLAVE SSH NATIVA EN EL RUNNER DE GITHUB
       # ==========================================================
-      - name: Copy Compose to DB Server
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.AWS_HOST_DB }}
-          username: ec2-user
-          key: ${{ secrets.AWS_SSH_KEY }}
-          source: "docker-compose-db.yml"
-          target: "/home/ec2-user/app"
+      - name: Setup SSH Native Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AWS_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          # Desactivar la verificación estricta de hosts para que no pida confirmar "yes/no"
+          echo -e "Host *\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
 
-      - name: Deploy Database Server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.AWS_HOST_DB }}
-          username: ec2-user
-          key: ${{ secrets.AWS_SSH_KEY }}
-          script: |
+      # ==========================================================
+      # DESPLIEGUE CAPA DE DATOS (DATABASE) - COMANDOS NATIVOS
+      # ==========================================================
+      - name: Deploy Database Server (Native)
+        run: |
+          # Enviar archivo usando SCP nativo de Linux
+          scp docker-compose-db.yml ec2-user@${{ secrets.AWS_HOST_DB }}:/home/ec2-user/app/docker-compose-db.yml
+          
+          # Ejecutar comandos remotos mediante SSH nativo
+          ssh ec2-user@${{ secrets.AWS_HOST_DB }} << 'EOF'
             mkdir -p /home/ec2-user/app
             cd /home/ec2-user/app
-            if [ -f "docker-compose-db.yml" ]; then cp docker-compose-db.yml docker-compose.yml; fi
+            cp docker-compose-db.yml docker-compose.yml 2>/dev/null || true
             docker-compose down || docker compose down || true
             docker-compose up -d || docker compose up -d
+          EOF
 
       # ==========================================================
-      # DESPLIEGUE CAPA DE LÓGICA (BACKENDS)
+      # DESPLIEGUE CAPA DE LÓGICA (BACKENDS) - COMANDOS NATIVOS
       # ==========================================================
-      - name: Copy Compose to Backends Server
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.AWS_HOST_BACK }}
-          username: ec2-user
-          key: ${{ secrets.AWS_SSH_KEY }}
-          source: "docker-compose-backends.yml"
-          target: "/home/ec2-user/app"
-
-      - name: Deploy Backends Server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.AWS_HOST_BACK }}
-          username: ec2-user
-          key: ${{ secrets.AWS_SSH_KEY }}
-          script: |
+      - name: Deploy Backends Server (Native)
+        run: |
+          # Enviar archivo
+          scp docker-compose-backends.yml ec2-user@${{ secrets.AWS_HOST_BACK }}:/home/ec2-user/app/docker-compose-backends.yml
+          
+          # Ejecutar comandos
+          ssh ec2-user@${{ secrets.AWS_HOST_BACK }} << 'EOF'
             mkdir -p /home/ec2-user/app
             cd /home/ec2-user/app
-            if [ -f "docker-compose-backends.yml" ]; then cp docker-compose-backends.yml docker-compose.yml; fi
+            cp docker-compose-backends.yml docker-compose.yml 2>/dev/null || true
             docker-compose down || docker compose down || true
             docker system prune -a -f
             docker-compose pull || docker compose pull
             docker-compose up -d || docker compose up -d
+          EOF
 
       # ==========================================================
-      # DESPLIEGUE CAPA DE PRESENTACIÓN (FRONTEND)
+      # DESPLIEGUE CAPA DE PRESENTACIÓN (FRONTEND) - COMANDOS NATIVOS
       # ==========================================================
-      - name: Copy Compose to Frontend Server
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.AWS_HOST_FRONT }}
-          username: ec2-user
-          key: ${{ secrets.AWS_SSH_KEY }}
-          source: "docker-compose-frontend.yml"
-          target: "/home/ec2-user/app"
-
-      - name: Deploy Frontend Server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.AWS_HOST_FRONT }}
-          username: ec2-user
-          key: ${{ secrets.AWS_SSH_KEY }}
-          script: |
+      - name: Deploy Frontend Server (Native)
+        run: |
+          # Enviar archivo
+          scp docker-compose-frontend.yml ec2-user@${{ secrets.AWS_HOST_FRONT }}:/home/ec2-user/app/docker-compose-frontend.yml
+          
+          # Ejecutar comandos
+          ssh ec2-user@${{ secrets.AWS_HOST_FRONT }} << 'EOF'
             mkdir -p /home/ec2-user/app
             cd /home/ec2-user/app
-            if [ -f "docker-compose-frontend.yml" ]; then cp docker-compose-frontend.yml docker-compose.yml; fi
+            cp docker-compose-frontend.yml docker-compose.yml 2>/dev/null || true
             docker-compose down || docker compose down || true
             docker system prune -a -f
             docker-compose pull || docker compose pull
             docker-compose up -d || docker compose up -d
+          EOF
