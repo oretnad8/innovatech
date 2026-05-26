@@ -39,53 +39,33 @@ jobs:
           echo -e "Host *\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
 
       # ==========================================================
-      # ORQUESTACIÓN CON SUDO DIRECTO HACIA AWS
+      # DESPLIEGUE EN CAPAS CON RE-ESTRUCTURACIÓN LIMPIA DE CONTENEDORES
       # ==========================================================
-      - name: Deploy Database Server
+      - name: Deploy Database & Backends Server
         run: |
-          # Crear directorio remoto con permisos correctos primero
-          ssh ec2-user@${{ secrets.AWS_HOST_DB }} "sudo mkdir -p /home/ec2-user/app && sudo chmod 777 /home/ec2-user/app"
-          
-          # Copiar el archivo compose
-          scp docker-compose-db.yml ec2-user@${{ secrets.AWS_HOST_DB }}:/home/ec2-user/app/docker-compose.yml
-          
-          # Ejecutar el despliegue con SUDO absoluto
-          ssh ec2-user@${{ secrets.AWS_HOST_DB }} << 'EOF'
-            cd /home/ec2-user/app
-            sudo docker-compose down || sudo docker compose down || true
-            sudo docker-compose up -d || sudo docker compose up -d
-          EOF
-
-      - name: Deploy Backends Server
-        run: |
-          # Crear directorio remoto con permisos
           ssh ec2-user@${{ secrets.AWS_HOST_BACK }} "sudo mkdir -p /home/ec2-user/app && sudo chmod 777 /home/ec2-user/app"
-          
-          # Copiar el archivo compose
           scp docker-compose-backends.yml ec2-user@${{ secrets.AWS_HOST_BACK }}:/home/ec2-user/app/docker-compose.yml
           
-          # Ejecutar con SUDO y limpiar memoria
           ssh ec2-user@${{ secrets.AWS_HOST_BACK }} << 'EOF'
             cd /home/ec2-user/app
-            sudo docker-compose down || sudo docker compose down || true
+            # Remover de raíz cualquier contenedor previo que cause conflicto de nombres
+            sudo docker rm -f backend-ventas backend-despachos db-ventas 2>/dev/null || true
+            sudo docker-compose down --remove-orphans || true
             sudo docker system prune -a -f
-            sudo docker-compose pull || sudo docker compose pull
-            sudo docker-compose up -d || sudo docker compose up -d
+            sudo docker-compose pull
+            sudo docker-compose up -d --remove-orphans
           EOF
 
       - name: Deploy Frontend Server
         run: |
-          # Crear directorio remoto con permisos
           ssh ec2-user@${{ secrets.AWS_HOST_FRONT }} "sudo mkdir -p /home/ec2-user/app && sudo chmod 777 /home/ec2-user/app"
-          
-          # Copiar el archivo compose
           scp docker-compose-frontend.yml ec2-user@${{ secrets.AWS_HOST_FRONT }}:/home/ec2-user/app/docker-compose.yml
           
-          # Ejecutar con SUDO
           ssh ec2-user@${{ secrets.AWS_HOST_FRONT }} << 'EOF'
             cd /home/ec2-user/app
-            sudo docker-compose down || sudo docker compose down || true
+            sudo docker rm -f frontend-app 2>/dev/null || true
+            sudo docker-compose down --remove-orphans || true
             sudo docker system prune -a -f
-            sudo docker-compose pull || sudo docker compose pull
-            sudo docker-compose up -d || sudo docker compose up -d
+            sudo docker-compose pull
+            sudo docker-compose up -d --remove-orphans
           EOF
