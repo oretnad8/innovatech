@@ -1,71 +1,51 @@
-name: Deploy to Multi-Tier AWS Architecture
+name: CI/CD Pipeline a AWS ECR (EP3)
 
 on:
   push:
-    branches: [ "deploy" ] 
+    branches: [ "deploy" ] # O cambia a "main" si estás trabajando en esa rama
 
 jobs:
-  deploy:
+  build-and-push-ecr:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout del código
         uses: actions/checkout@v3
 
-      # Logueo nativo en la infraestructura del runner de GitHub
-      - name: Login to Docker Hub (Native)
-        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+      - name: Configurar credenciales de AWS
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
 
-      # CONSTRUCCIÓN Y EMPAQUETADO EN LA NUBE DE GITHUB
-      - name: Build and Push Images to Docker Hub
-        run: |
-          # 1. Compilar y subir Backend Ventas
-          docker build -t oretnad8/innovatech-backend-ventas:latest ./back-Ventas_SpringBoot/Springboot-API-REST
-          docker push oretnad8/innovatech-backend-ventas:latest
-          
-          # 2. Compilar y subir Backend Despachos
-          docker build -t oretnad8/innovatech-backend-despacho:latest ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
-          docker push oretnad8/innovatech-backend-despacho:latest
-          
-          # 3. Compilar Frontend inyectando las IPs
-          docker build --build-arg VITE_API_VENTAS=http://${{ secrets.AWS_HOST_BACK }}:8081 --build-arg VITE_API_DESPACHOS=http://${{ secrets.AWS_HOST_BACK }}:8080 -t oretnad8/innovatech-frontend:latest ./front_despacho
-          docker push oretnad8/innovatech-frontend:latest
+      - name: Iniciar sesión en Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
-      # Configurar la llave SSH nativa en la máquina virtual de GitHub
-      - name: Setup SSH Native Key
+      - name: Build y Push Frontend
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: innovatech-front
+          IMAGE_TAG: latest
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.AWS_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          echo -e "Host *\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./front_despacho
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-      # ==========================================================
-      # DESPLIEGUE EN CAPAS CON RE-ESTRUCTURACIÓN LIMPIA DE CONTENEDORES
-      # ==========================================================
-      - name: Deploy Database & Backends Server
+      - name: Build y Push Backend Ventas
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: innovatech-back-ventas
+          IMAGE_TAG: latest
         run: |
-          ssh ec2-user@${{ secrets.AWS_HOST_BACK }} "sudo mkdir -p /home/ec2-user/app && sudo chmod 777 /home/ec2-user/app"
-          scp docker-compose-backends.yml ec2-user@${{ secrets.AWS_HOST_BACK }}:/home/ec2-user/app/docker-compose.yml
-          
-          ssh ec2-user@${{ secrets.AWS_HOST_BACK }} << 'EOF'
-            cd /home/ec2-user/app
-            # Remover de raíz cualquier contenedor previo que cause conflicto de nombres
-            sudo docker rm -f backend-ventas backend-despachos db-ventas 2>/dev/null || true
-            sudo docker-compose down --remove-orphans || true
-            sudo docker system prune -a -f
-            sudo docker-compose pull
-            sudo docker-compose up -d --remove-orphans
-          EOF
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./back-Ventas_SpringBoot/Springboot-API-REST
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-      - name: Deploy Frontend Server
+      - name: Build y Push Backend Despachos
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: innovatech-back-despachos
+          IMAGE_TAG: latest
         run: |
-          ssh ec2-user@${{ secrets.AWS_HOST_FRONT }} "sudo mkdir -p /home/ec2-user/app && sudo chmod 777 /home/ec2-user/app"
-          scp docker-compose-frontend.yml ec2-user@${{ secrets.AWS_HOST_FRONT }}:/home/ec2-user/app/docker-compose.yml
-          
-          ssh ec2-user@${{ secrets.AWS_HOST_FRONT }} << 'EOF'
-            cd /home/ec2-user/app
-            sudo docker rm -f frontend-app 2>/dev/null || true
-            sudo docker-compose down --remove-orphans || true
-            sudo docker system prune -a -f
-            sudo docker-compose pull
-            sudo docker-compose up -d --remove-orphans
-          EOF
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
