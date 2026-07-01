@@ -21,14 +21,16 @@ export const FormCierreDespacho = ({ despacho, onClose }) => {
     console.log("Datos del formulario:", jsonData);
 
     try {
+      const urlDespachos = `${import.meta.env.VITE_API_DESPACHOS}/${despacho.idDespacho}`;
+      console.log("Intentando conectar a:", urlDespachos);
       await axios.put(
-        `${import.meta.env.VITE_API_DESPACHOS}/api/v1/despachos/${despacho.idDespacho}`,
+        urlDespachos,
         jsonData,
         {
-          headers:{
+          headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
-      }
+          }
         }
       );
       Swal.fire({
@@ -38,7 +40,7 @@ export const FormCierreDespacho = ({ despacho, onClose }) => {
         confirmButtonText: "Aceptar",
       });
     } catch (error) {
-      console.error("Error en la solicitud:", error);
+      console.error("Error crítico en petición API:", error.message);
     }
     onClose();
   };

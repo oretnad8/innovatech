@@ -24,22 +24,28 @@ export const FormDespacho = ({ venta, onClose }) => {
     console.log("Datos del formulario:", jsonData);
 
     try {
+      const urlVentas = `${import.meta.env.VITE_API_VENTAS}/${venta.idVenta}`;
+      console.log("Intentando conectar a:", urlVentas);
       await axios.put(
-        `${import.meta.env.VITE_API_VENTAS}/api/v1/ventas/${venta.idVenta}`,
+        urlVentas,
         jsonDataSales,
         {
-          headers:{
+          headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
-      }
+          }
         }
       );
-      await axios.post(`${import.meta.env.VITE_API_DESPACHOS}/api/v1/despachos`, jsonData, {
-        headers:{
+      
+      const urlDespachos = import.meta.env.VITE_API_DESPACHOS;
+      console.log("Intentando conectar a:", urlDespachos);
+      await axios.post(urlDespachos, jsonData, {
+        headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
-    }
+        }
       });
+      
       Swal.fire({
         title: "Despacho registrado 🛻!",
         text: "El despacho ha sido generado con éxito en la base de datos",
@@ -47,7 +53,7 @@ export const FormDespacho = ({ venta, onClose }) => {
         confirmButtonText: "Aceptar",
       });
     } catch (error) {
-      console.error("Error en la solicitud:", error);
+      console.error("Error crítico en petición API:", error.message);
     }
     onClose();
   };

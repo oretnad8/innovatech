@@ -7,16 +7,21 @@ export const TableCompras = () => {
   const [ventas, setVentas] = useState([]);
 
   const compras = async () => {
-    await axios.get(`${import.meta.env.VITE_API_VENTAS}/api/v1/ventas`, {
-      headers:{
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-  }
-    }).then((response) => {
+    const url = import.meta.env.VITE_API_VENTAS;
+    console.log("Intentando conectar a:", url);
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
       console.log("Datos recibidos de API Ventas:", response.data);
       setVentas(response.data);
       console.log("Estado 'ventas' actualizado en React");
-    });
+    } catch (error) {
+      console.error("Error crítico en petición API Ventas:", error.message);
+    }
   };
   // Llamada a la función para obtener los datos cuando el componente se monta
   useEffect(() => {

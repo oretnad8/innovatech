@@ -7,18 +7,21 @@ export const TableDespachos = () => {
   const [despachos, setDespachos] = useState([]);
 
   const despacho = async () => {
-    await axios
-      .get(`${import.meta.env.VITE_API_DESPACHOS}/api/v1/despachos`, {
-        headers:{
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
+    const url = import.meta.env.VITE_API_DESPACHOS;
+    console.log("Intentando conectar a:", url);
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         }
-      })
-      .then((response) => {
-        console.log("Datos recibidos de API Despachos:", response.data);
-        setDespachos(response.data);
-        console.log("Estado 'despachos' actualizado en React");
       });
+      console.log("Datos recibidos de API Despachos:", response.data);
+      setDespachos(response.data);
+      console.log("Estado 'despachos' actualizado en React");
+    } catch (error) {
+      console.error("Error crítico en petición API Despachos:", error.message);
+    }
   };
   // Llamada a la función para obtener los datos cuando el componente se monta
   useEffect(() => {
